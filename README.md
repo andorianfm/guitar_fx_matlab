@@ -15,7 +15,7 @@ Each effect is implemented from scratch using basic signal processing equations 
 
 ## 🧠 How It Works
 
-All processing is done in a single script: [`guitar_fx.m`](guitar_fx.m)
+All processing is done in a single script: [`Guitar_FX.m`](Guitar_FX.m)
 
 Simply provide a mono `.wav` file (e.g., `guitar_clean.wav`) in the same directory and run the script in MATLAB.
 
