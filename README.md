@@ -31,8 +31,8 @@ Each effect block:
 Spectrograms showing the time–frequency behavior of each effect are included in `/spectrograms`.
 
 <p float="left">
-  <img src="spectrograms/spectrogram_flanger.jpg" width="45%" />
-  <img src="spectrograms/spectrogram_distortion.jpg" width="45%" />
+  <img src="spectrogram_flanger.jpg" width="45%" />
+  <img src="spectrogram_distortion.jpg" width="45%" />
 </p>
 
 ---
