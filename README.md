@@ -39,7 +39,7 @@ Spectrograms showing the time–frequency behavior of each effect are included i
 
 ## 📄 Report
 
-A technical mini-report (LaTeX + PDF) is available in the `/report/` folder.  
+A technical mini-report is available in the `report.pdf`](report.pdf) file.  
 It includes:
 - DSP equations  
 - Observations from each spectrogram  
