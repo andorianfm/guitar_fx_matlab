@@ -1,7 +1,7 @@
 # 🎸 Digital Guitar Effects in MATLAB
 
 This project demonstrates a set of digital guitar effects implemented in pure MATLAB.  
-The code processes a clean guitar signal (from a solo by my band *Melodi*) and applies common effects such as:
+The code processes a clean guitar signal (from a solo by my band *Buluşalım Rüyalarda- Siyah Orkide*) and applies common effects such as:
 
 - Delay
 - Reverb
