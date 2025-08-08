@@ -7,7 +7,12 @@ The code processes a clean guitar signal (from a solo by my band *Buluşalım R�
 - Reverb
 - Chorus / Octaver
 - Flanger
+- Phaser
 - Distortion
+- Low-Pass Filter
+- High-Pass Filter
+- Wah Pedal
+
 
 Each effect is implemented from scratch using basic signal processing equations — no toolboxes, plugins, or external packages were used.
 
