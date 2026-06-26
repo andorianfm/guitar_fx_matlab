@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+    :root {
+        --bg: #0e0e12;
+        --panel: #17171d;
+        --panel2: #1e1e26;
+        --edge: #2c2c36;
+        --text: #e8e8ef;
+        --muted: #8a8a98;
+        --accent: #ffce54;
+    }
+    * { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+    html, body {
+        margin: 0; height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", system-ui, sans-serif;
+        overflow: hidden;
+    }
+    body { display: flex; flex-direction: column; padding: 10px 12px 12px; }
+
+    /* ---- Top transport bar ---- */
+    .topbar {
+        display: flex; align-items: center; gap: 10px;
+        background: linear-gradient(180deg, #20202a, #15151b);
+        border: 1px solid var(--edge);
+        border-radius: 12px;
+        padding: 10px 14px;
+        margin-bottom: 10px;
+    }
+    .brand { font-weight: 700; letter-spacing: .5px; font-size: 15px; }
+    .brand .pick { color: var(--accent); }
+    .status {
+        flex: 1; min-width: 0;
+        font-size: 12px; color: var(--muted);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .status b { color: var(--text); font-weight: 600; }
+    .btn {
+        border: 1px solid var(--edge);
+        background: var(--panel2);
+        color: var(--text);
+        border-radius: 9px;
+        padding: 8px 13px;
+        font-size: 13px; font-weight: 600;
+        cursor: pointer;
+        transition: background .15s, border-color .15s, transform .05s;
+        white-space: nowrap;
+    }
+    .btn:hover { background: #2a2a34; border-color: #41414f; }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: #2e6b3e; border-color: #3c8a50; }
+    .btn.primary:hover { background: #37804a; }
+    .btn.playing { background: #8a3030; border-color: #b04141; }
+    .btn.playing:hover { background: #a03838; }
+    .btn.accent { background: #6b5a2e; border-color: #8a7440; }
+    .pill {
+        font-size: 11px; color: #1a1a1a; background: var(--accent);
+        border-radius: 20px; padding: 3px 10px; font-weight: 700;
+        opacity: 0; transition: opacity .2s;
+    }
+    .pill.show { opacity: 1; }
+
+    .master-wrap { display: flex; align-items: center; gap: 8px; padding-left: 6px; }
+
+    /* ---- Pedalboard grid ---- */
+    .board {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        grid-template-rows: 1fr 1fr;
+        gap: 9px;
+        overflow: hidden;
+        padding: 2px;
+    }
+    .pedal {
+        background: linear-gradient(170deg, var(--panel2), var(--panel));
+        border: 1px solid var(--edge);
+        border-top: 3px solid var(--pcolor, #555);
+        border-radius: 11px;
+        padding: 7px 8px 8px;
+        display: flex; flex-direction: column; align-items: center;
+        min-height: 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .pedal-name {
+        font-size: 11px; font-weight: 700; letter-spacing: 1px;
+        color: var(--pcolor, #ccc); margin-bottom: 6px; text-align: center;
+    }
+    .knobs { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-bottom: 7px; }
+    .knob-cell { display: flex; flex-direction: column; align-items: center; width: 50px; }
+
+    .knob {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: radial-gradient(circle at 50% 35%, #3a3a46, #15151b 70%);
+        border: 1px solid #43434f;
+        position: relative; cursor: ns-resize;
+        box-shadow: 0 2px 5px rgba(0,0,0,.5), inset 0 1px 1px rgba(255,255,255,.07);
+        touch-action: none;
+    }
+    .knob::after {
+        content: ""; position: absolute;
+        left: 50%; top: 5px; width: 3px; height: 13px;
+        background: var(--accent); border-radius: 2px;
+        transform-origin: 50% 16px;
+        transform: translateX(-50%) rotate(var(--ang, -135deg));
+        box-shadow: 0 0 4px rgba(255,206,84,.6);
+    }
+    .knob-label { font-size: 9px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: .3px; }
+    .knob-val { font-size: 10px; color: var(--text); margin-top: 1px; font-variant-numeric: tabular-nums; }
+
+    /* ---- Footswitch ---- */
+    .footswitch {
+        display: flex; flex-direction: column; align-items: center; gap: 5px;
+        margin-top: auto;
+    }
+    .led {
+        width: 9px; height: 9px; border-radius: 50%;
+        background: #3a1010; box-shadow: inset 0 0 2px #000;
+        transition: background .15s, box-shadow .15s;
+    }
+    .pedal.on .led { background: #ff5b5b; box-shadow: 0 0 8px #ff5b5b, 0 0 2px #fff; }
+    .stomp {
+        width: 46px; height: 24px; border-radius: 6px;
+        background: linear-gradient(180deg, #2a2a33, #15151b);
+        border: 1px solid #44444f; cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,.5);
+    }
+    .stomp:active { transform: translateY(1px); }
+
+    /* ---- Toast ---- */
+    .toast {
+        position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+        background: #2a2a34; border: 1px solid #44444f; color: var(--text);
+        padding: 9px 16px; border-radius: 8px; font-size: 13px;
+        opacity: 0; pointer-events: none; transition: opacity .25s;
+        box-shadow: 0 6px 20px rgba(0,0,0,.5);
+    }
+    .toast.show { opacity: 1; }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-thumb { background: #33333d; border-radius: 5px; }
+</style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="brand">🎸 <span class="pick">Guitar FX</span> Pedalboard</div>
+        <div class="status" id="status">Loading…</div>
+        <div class="pill" id="procPill">PROCESSING…</div>
+        <div class="master-wrap" id="masterMount"></div>
+        <button class="btn primary" id="playBtn" onclick="onPlay()">▶ Play</button>
+        <button class="btn" onclick="send('LoadFile','')">📁 Load</button>
+        <button class="btn" onclick="send('LoadDemo','')">🎸 Demo</button>
+        <button class="btn accent" onclick="send('Export','')">💾 Export</button>
+    </div>
+
+    <div class="board" id="board"></div>
+    <div class="toast" id="toast"></div>
+
+<script>
+const PEDALS = [
+ {id:'wah', name:'WAH', color:'#e6a817', params:[
+    {id:'rate',label:'Rate',min:0.1,max:6,step:0.05,def:2,unit:'Hz'},
+    {id:'center',label:'Center',min:200,max:3000,step:10,def:1000,unit:'Hz'},
+    {id:'q',label:'Q',min:0.5,max:8,step:0.1,def:3}]},
+ {id:'distortion', name:'DISTORTION', color:'#e0533d', params:[
+    {id:'drive',label:'Drive',min:1,max:40,step:0.5,def:14},
+    {id:'level',label:'Level',min:0,max:1,step:0.01,def:0.8}]},
+ {id:'chorus', name:'CHORUS', color:'#3da0e0', params:[
+    {id:'depth',label:'Depth',min:0,max:1,step:0.01,def:0.3},
+    {id:'mix',label:'Mix',min:0,max:1,step:0.01,def:0.5}]},
+ {id:'flanger', name:'FLANGER', color:'#7b5cd6', params:[
+    {id:'rate',label:'Rate',min:0.05,max:2,step:0.01,def:0.25,unit:'Hz'},
+    {id:'depth',label:'Depth',min:0,max:1,step:0.01,def:0.5},
+    {id:'feedback',label:'F.Back',min:0,max:0.9,step:0.01,def:0.5}]},
+ {id:'phaser', name:'PHASER', color:'#c84fb0', params:[
+    {id:'rate',label:'Rate',min:0.1,max:2,step:0.01,def:0.5,unit:'Hz'},
+    {id:'depth',label:'Depth',min:0,max:1,step:0.01,def:0.6},
+    {id:'stages',label:'Stages',min:1,max:6,step:1,def:4}]},
+ {id:'octave', name:'OCTAVE', color:'#46c98b', params:[
+    {id:'mix',label:'Mix',min:0,max:1,step:0.01,def:0.6}]},
+ {id:'lpf', name:'LOW-PASS', color:'#5b8fb0', params:[
+    {id:'cutoff',label:'Cutoff',min:100,max:3800,step:10,def:1200,unit:'Hz'}]},
+ {id:'hpf', name:'HIGH-PASS', color:'#b0935b', params:[
+    {id:'cutoff',label:'Cutoff',min:40,max:2000,step:10,def:800,unit:'Hz'}]},
+ {id:'delay', name:'DELAY', color:'#3dd0c0', params:[
+    {id:'time',label:'Time',min:0.05,max:0.8,step:0.005,def:0.34,unit:'s'},
+    {id:'feedback',label:'F.Back',min:0,max:0.9,step:0.01,def:0.4},
+    {id:'mix',label:'Mix',min:0,max:1,step:0.01,def:0.4}]},
+ {id:'reverb', name:'REVERB', color:'#8a8ad6', params:[
+    {id:'amount',label:'Size',min:0,max:1,step:0.01,def:0.6},
+    {id:'mix',label:'Mix',min:0,max:1,step:0.01,def:0.4}]},
+];
+
+const values = {};        // knobId -> numeric value
+const pedalOn = {};       // pedalId -> bool
+let playing = false;
+let comp = null;
+
+// ---------- Knob factory ----------
+function fmt(v, step) {
+    if (step >= 1) return String(Math.round(v));
+    if (step >= 0.1) return v.toFixed(1);
+    return v.toFixed(2);
+}
+function makeKnob(knobId, p) {
+    values[knobId] = p.def;
+    const cell = document.createElement('div');
+    cell.className = 'knob-cell';
+    const knob = document.createElement('div');
+    knob.className = 'knob';
+    const lab = document.createElement('div');
+    lab.className = 'knob-label';
+    lab.textContent = p.label;
+    const val = document.createElement('div');
+    val.className = 'knob-val';
+    cell.append(knob, lab, val);
+
+    function render() {
+        const frac = (values[knobId] - p.min) / (p.max - p.min);
+        knob.style.setProperty('--ang', (-135 + 270 * frac) + 'deg');
+        val.textContent = fmt(values[knobId], p.step) + (p.unit ? ' ' + p.unit : '');
+    }
+    function setVal(v) {
+        v = Math.min(p.max, Math.max(p.min, v));
+        v = Math.round(v / p.step) * p.step;
+        values[knobId] = v;
+        render();
+    }
+    render();
+
+    let dragging = false, startY = 0, startV = 0;
+    knob.addEventListener('pointerdown', e => {
+        dragging = true; startY = e.clientY; startV = values[knobId];
+        knob.setPointerCapture(e.pointerId);
+        e.preventDefault();
+    });
+    knob.addEventListener('pointermove', e => {
+        if (!dragging) return;
+        const span = (p.max - p.min);
+        // 220px of vertical travel covers full range; Shift = fine (5x)
+        const sens = e.shiftKey ? 5 : 1;
+        setVal(startV + ((startY - e.clientY) / 220) * span / sens);
+        scheduleSend();
+    });
+    function endDrag(e) {
+        if (!dragging) return;
+        dragging = false;
+        try { knob.releasePointerCapture(e.pointerId); } catch (_) {}
+        sendNow();
+    }
+    knob.addEventListener('pointerup', endDrag);
+    knob.addEventListener('pointercancel', endDrag);
+    knob.addEventListener('dblclick', () => { setVal(p.def); sendNow(); });
+    return cell;
+}
+
+// ---------- Build the board ----------
+function build() {
+    const board = document.getElementById('board');
+    for (const ped of PEDALS) {
+        pedalOn[ped.id] = false;
+        const el = document.createElement('div');
+        el.className = 'pedal';
+        el.style.setProperty('--pcolor', ped.color);
+        el.id = 'pedal-' + ped.id;
+
+        const name = document.createElement('div');
+        name.className = 'pedal-name';
+        name.textContent = ped.name;
+        el.appendChild(name);
+
+        const knobs = document.createElement('div');
+        knobs.className = 'knobs';
+        for (const par of ped.params) knobs.appendChild(makeKnob(ped.id + '__' + par.id, par));
+        el.appendChild(knobs);
+
+        const fs = document.createElement('div');
+        fs.className = 'footswitch';
+        const stomp = document.createElement('div');
+        stomp.className = 'stomp';
+        const led = document.createElement('div');
+        led.className = 'led';
+        stomp.onclick = () => toggle(ped.id);
+        fs.append(led, stomp);
+        el.appendChild(fs);
+
+        board.appendChild(el);
+    }
+    // master knob in the top bar
+    document.getElementById('masterMount')
+        .appendChild(makeKnob('master', {id:'master',label:'Master',min:0,max:1.5,step:0.01,def:1.0}));
+}
+
+function toggle(id) {
+    pedalOn[id] = !pedalOn[id];
+    document.getElementById('pedal-' + id).classList.toggle('on', pedalOn[id]);
+    sendNow();
+}
+
+// ---------- Config + messaging ----------
+function collectConfig() {
+    const cfg = { master: values['master'] };
+    for (const ped of PEDALS) {
+        const o = { on: pedalOn[ped.id] === true };
+        for (const par of ped.params) o[par.id] = values[ped.id + '__' + par.id];
+        cfg[ped.id] = o;
+    }
+    return cfg;
+}
+
+let sendTimer = null;
+function scheduleSend() {              // throttled live updates while dragging
+    if (sendTimer) return;
+    sendTimer = setTimeout(() => { sendTimer = null; sendNow(); }, 200);
+}
+function sendNow() {
+    if (sendTimer) { clearTimeout(sendTimer); sendTimer = null; }
+    showProc(true);
+    send('ParamsChanged', collectConfig());
+}
+function send(name, data) {
+    if (comp) comp.sendEventToMATLAB(name, data);
+}
+
+function onPlay() {
+    if (playing) send('Stop', ''); else send('Play', '');
+}
+function setPlaying(on) {
+    playing = on;
+    const b = document.getElementById('playBtn');
+    b.textContent = on ? '■ Stop' : '▶ Play';
+    b.classList.toggle('playing', on);
+    b.classList.toggle('primary', !on);
+}
+function showProc(on) { document.getElementById('procPill').classList.toggle('show', on); }
+
+let toastTimer = null;
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ---------- uihtml wiring ----------
+function setup(htmlComponent) {
+    comp = htmlComponent;
+    window.htmlComponent = htmlComponent;
+
+    htmlComponent.addEventListener('Status', e => {
+        const d = e.Data;
+        document.getElementById('status').innerHTML =
+            'File: <b>' + d.file + '</b> &nbsp;·&nbsp; ' +
+            (+d.dur).toFixed(2) + ' s &nbsp;·&nbsp; ' + d.fs + ' Hz' +
+            ' &nbsp;·&nbsp; peak ' + (+d.peak).toFixed(2);
+    });
+    htmlComponent.addEventListener('Processed', () => showProc(false));
+    htmlComponent.addEventListener('Playing',  () => setPlaying(true));
+    htmlComponent.addEventListener('Stopped',  () => setPlaying(false));
+    htmlComponent.addEventListener('Notify',   e => { showProc(false); toast(e.Data); });
+
+    build();
+    // Kick off the first render with the default (all-bypassed) config.
+    sendNow();
+}
+</script>
+</body>
+</html>
