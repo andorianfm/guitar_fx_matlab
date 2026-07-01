@@ -78,8 +78,7 @@
     }
     .pedal {
         background: linear-gradient(170deg, var(--panel2), var(--panel));
-        border: 1px solid var(--edge);
-        border-top: 3px solid var(--pcolor, #555);
+        border: 1px solid color-mix(in srgb, var(--pcolor, #555) 45%, var(--edge));
         border-radius: 11px;
         padding: 7px 8px 8px;
         display: flex; flex-direction: column; align-items: center;
@@ -142,6 +141,18 @@
     .toast.show { opacity: 1; }
     ::-webkit-scrollbar { width: 9px; height: 9px; }
     ::-webkit-scrollbar-thumb { background: #33333d; border-radius: 5px; }
+
+    /* ---- Keyboard focus + reduced motion (accessibility) ---- */
+    .knob:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .stomp:focus-visible,
+    .btn:focus-visible   { outline: 2px solid var(--accent); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .01ms !important;
+        }
+    }
 </style>
 </head>
 <body>
@@ -211,6 +222,11 @@ function makeKnob(knobId, p) {
     cell.className = 'knob-cell';
     const knob = document.createElement('div');
     knob.className = 'knob';
+    knob.tabIndex = 0;
+    knob.setAttribute('role', 'slider');
+    knob.setAttribute('aria-label', p.label);
+    knob.setAttribute('aria-valuemin', p.min);
+    knob.setAttribute('aria-valuemax', p.max);
     const lab = document.createElement('div');
     lab.className = 'knob-label';
     lab.textContent = p.label;
@@ -221,7 +237,10 @@ function makeKnob(knobId, p) {
     function render() {
         const frac = (values[knobId] - p.min) / (p.max - p.min);
         knob.style.setProperty('--ang', (-135 + 270 * frac) + 'deg');
-        val.textContent = fmt(values[knobId], p.step) + (p.unit ? ' ' + p.unit : '');
+        const txt = fmt(values[knobId], p.step) + (p.unit ? ' ' + p.unit : '');
+        val.textContent = txt;
+        knob.setAttribute('aria-valuenow', values[knobId]);
+        knob.setAttribute('aria-valuetext', txt);
     }
     function setVal(v) {
         v = Math.min(p.max, Math.max(p.min, v));
@@ -254,6 +273,22 @@ function makeKnob(knobId, p) {
     knob.addEventListener('pointerup', endDrag);
     knob.addEventListener('pointercancel', endDrag);
     knob.addEventListener('dblclick', () => { setVal(p.def); sendNow(); });
+    // Keyboard: arrows nudge by one step, PageUp/Down by ten, Home/End to min/max
+    knob.addEventListener('keydown', e => {
+        let d = 0;
+        switch (e.key) {
+            case 'ArrowUp': case 'ArrowRight':  d =  p.step;      break;
+            case 'ArrowDown': case 'ArrowLeft': d = -p.step;      break;
+            case 'PageUp':    d =  p.step * 10;                   break;
+            case 'PageDown':  d = -p.step * 10;                   break;
+            case 'Home': setVal(p.min); scheduleSend(); e.preventDefault(); return;
+            case 'End':  setVal(p.max); scheduleSend(); e.preventDefault(); return;
+            default: return;
+        }
+        setVal(values[knobId] + d);
+        scheduleSend();
+        e.preventDefault();
+    });
     return cell;
 }
 
@@ -281,9 +316,14 @@ function build() {
         fs.className = 'footswitch';
         const stomp = document.createElement('div');
         stomp.className = 'stomp';
+        stomp.tabIndex = 0;
+        stomp.setAttribute('role', 'switch');
+        stomp.setAttribute('aria-checked', 'false');
+        stomp.setAttribute('aria-label', ped.name + ' pedal');
         const led = document.createElement('div');
         led.className = 'led';
         stomp.onclick = () => toggle(ped.id);
+        stomp.onkeydown = e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(ped.id); } };
         fs.append(led, stomp);
         el.appendChild(fs);
 
@@ -296,7 +336,9 @@ function build() {
 
 function toggle(id) {
     pedalOn[id] = !pedalOn[id];
-    document.getElementById('pedal-' + id).classList.toggle('on', pedalOn[id]);
+    const el = document.getElementById('pedal-' + id);
+    el.classList.toggle('on', pedalOn[id]);
+    el.querySelector('.stomp').setAttribute('aria-checked', pedalOn[id] ? 'true' : 'false');
     sendNow();
 }
 

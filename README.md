@@ -20,7 +20,7 @@ Each effect is implemented from scratch using basic signal processing equations 
 
 ## 🎛️ Interactive Pedalboard App
 
-An interactive app turns these effects into a playable pedalboard. Launch it in MATLAB (R2025a+):
+An interactive app turns these effects into a playable pedalboard. Launch it in MATLAB (R2025a or newer):
 
 ```matlab
 addpath('app')
@@ -29,14 +29,47 @@ guitarFXApp
 
 ![Guitar FX Pedalboard](app/screenshot.png)
 
-Features:
-- **Load / Demo** — open your own `.wav` (stereo is summed to mono) or start from the bundled `clean_guitar.wav` demo.
-- **Stompbox knobs** — drag the rotary knobs (hold **Shift** for fine control, **double-click** to reset) and tap each footswitch LED to engage a pedal. Pedals are chained in classic order: Wah → Distortion → Chorus → Flanger → Phaser → Octave → Low-Pass → High-Pass → Delay → Reverb → Master.
-- **Live spectrogram** — the time–frequency view redraws as you turn knobs, with a playhead that sweeps in real time during playback.
-- **Play** — audition the processed sound.
-- **Export** — render the current settings to a new `.wav`. What you hear is exactly what's written.
+The front end (`pedalboard.html`) is plain HTML/CSS/JS rendered inside a MATLAB `uihtml` component; MATLAB does the DSP and plays the audio. Turning a knob or tapping a footswitch sends the whole pedal configuration to MATLAB, which re-renders the chain and redraws the spectrogram.
 
-All app code lives in [`app/`](app): the DSP in [`gfxApplyChain.m`](app/gfxApplyChain.m) (parametric versions of the `Guitar_FX.m` effects), the UI in [`pedalboard.html`](app/pedalboard.html), and the wiring in [`guitarFXApp.m`](app/guitarFXApp.m). Run [`app/gfx_selftest.m`](app/gfx_selftest.m) to validate the effect chain headlessly. The demo clip `clean_guitar.wav` stays in the repo root (shared with `Guitar_FX.m`).
+### Controls
+
+| Control | What it does |
+|---|---|
+| **Load** | Open your own `.wav` (stereo is summed to mono). |
+| **Demo** | Load the bundled `clean_guitar.wav`. |
+| **Play / Stop** | Audition the processed sound. The button turns red while playing. |
+| **Export** | Render the current settings to a new `.wav`. What you hear is what gets written. |
+| **Master** | Output gain, in the top bar. |
+| **Knobs** | Drag up or down to set a value. Hold **Shift** for fine control; **double-click** to reset to default. |
+| **Footswitch** | Tap the switch (the LED lights) to engage a pedal. |
+
+### Keyboard and accessibility
+
+Every knob and footswitch is keyboard-operable:
+
+- **Tab** moves between knobs, footswitches, and buttons, with a focus ring on the active control.
+- On a knob: **↑ / ↓** (or **← / →**) nudge by one step, **PageUp / PageDown** by ten steps, **Home / End** jump to min and max. Knobs expose their value to screen readers as ARIA sliders.
+- On a footswitch: **Space** or **Enter** toggles the pedal.
+- Motion respects `prefers-reduced-motion`.
+
+### Signal chain
+
+Pedals run in classic front-of-amp then FX-loop order:
+
+> Wah → Distortion → Chorus → Flanger → Phaser → Octave → Low-Pass → High-Pass → Delay → Reverb → Master
+
+Bypassed pedals are skipped, so only the engaged effects shape the sound. The live spectrogram redraws whenever a control changes, and a playhead sweeps across it during playback.
+
+### Files
+
+All app code lives in [`app/`](app):
+
+- [`pedalboard.html`](app/pedalboard.html) — the UI (self-contained HTML/CSS/JS).
+- [`gfxApplyChain.m`](app/gfxApplyChain.m) — the DSP: parametric versions of the `Guitar_FX.m` effects.
+- [`guitarFXApp.m`](app/guitarFXApp.m) — the wiring between the UI and MATLAB.
+- [`gfx_selftest.m`](app/gfx_selftest.m) — validates the effect chain headlessly, with no UI.
+
+The demo clip `clean_guitar.wav` stays in the repo root, shared with `Guitar_FX.m`.
 
 ---
 
